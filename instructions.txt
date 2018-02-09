@@ -1,0 +1,12 @@
+#You will need basic build untilies installed already.
+./autogen.sh
+make
+sudo cp src/.libs/libgstviperfx.so /usr/lib/gstreamer-1.0
+
+#Go download the Viper Core. 
+sudo cp libviperfx_x64_linux.so /usr/lib/libviperfx.so
+sudo chmod +x /usr/lib/libviperfx.so
+
+#You should now be able to view the plugin with gst-inspect-1.0 viperfx
+#You should now be able to run some basic processing like:
+#gst-launch-1.0 -v filesrc location=Alesis-Fusion-Viola-C5.wav ! wavparse ! viperfx fx-enable=true out-volume=10 ! pulsesink
