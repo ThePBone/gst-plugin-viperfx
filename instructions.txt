@@ -1,4 +1,4 @@
-#You will need basic build untilies installed already.
+#You will need basic build utilities installed already.
 ./autogen.sh
 make
 sudo cp src/.libs/libgstviperfx.so /usr/lib/gstreamer-1.0
