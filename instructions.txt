@@ -15,8 +15,10 @@ sudo chmod +x /usr/lib/libviperfx.so
 
 #Get current sinks
 pacmd list-sinks | grep -e 'name:'
+#or
+pactl list sinks | grep -e 'Name:' -A1
 #Make a dummy sink
-pactl load-module module-null-sink sink_name=viper
+pactl load-module module-null-sink sink_name=viper sink_properties=device.description=Viper4Linux
 #Max the volume on the original output device
 #Change primary output device to the dummy sink.
 #Route the monitor of the dummy into viper then out to the original (hardware) sink.
