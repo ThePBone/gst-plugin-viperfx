@@ -1558,7 +1558,7 @@ GST_PLUGIN_DEFINE (
     "viperfx element",
     viperfx_init,
     VERSION,
-    "GPL",
+    "Proprietary",
     "GStreamer",
     "http://gstreamer.net/"
 )
