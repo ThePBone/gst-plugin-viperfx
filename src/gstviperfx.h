@@ -30,6 +30,9 @@ struct _Gstviperfx {
   gint32 dynsys_xcoeffs;
   gint32 dynsys_ycoeffs;
   gint32 dynsys_sidegain;
+  gint32 dynsys_xcoeffs2;
+  gint32 dynsys_ycoeffs2;
+  gint32 dynsys_sidegain2;
   gint32 dynsys_bassgain;
   // convolver
   gboolean conv_enabled;

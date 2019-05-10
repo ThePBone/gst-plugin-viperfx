@@ -12,6 +12,7 @@
 #define PACKAGE "viperfx-plugin"
 #define VERSION "1.0.0"
 
+#include <stdio.h>
 #include <string.h>
 #include <gst/gst.h>
 #include <gst/base/base.h>
@@ -19,12 +20,10 @@
 #include <gst/audio/audio.h>
 #include <gst/audio/gstaudiofilter.h>
 #include <gst/controller/controller.h>
-
 #include "gstviperfx.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_viperfx_debug);
 #define GST_CAT_DEFAULT gst_viperfx_debug
-
 /* Filter signals and args */
 enum
 {
@@ -47,6 +46,9 @@ enum
   PROP_DYNSYS_XCOEFFS,
   PROP_DYNSYS_YCOEFFS,
   PROP_DYNSYS_SIDEGAIN,
+  PROP_DYNSYS_XCOEFFS2,
+  PROP_DYNSYS_YCOEFFS2,
+  PROP_DYNSYS_SIDEGAIN2,
   PROP_DYNSYS_BASSGAIN,
   /* vhe */
   PROP_VHE_ENABLE,
@@ -201,18 +203,26 @@ gst_viperfx_class_init (GstviperfxClass * klass)
           g_param_spec_boolean ("dynsys_enable", "DYNSYSEnabled", "Enable dynamic system",
                   FALSE, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_YCOEFFS,
-          g_param_spec_int ("dynsys_ycoeffs", "DYNSYSYCoeffs", "Dynamic System YCoeffs",
-                  0, 10000, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+          g_param_spec_int ("dynsys_ycoeff1", "DYNSYSYCoeff1", "Dynamic System YCoeff1",
+                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_XCOEFFS,
-          g_param_spec_int ("dynsys_xcoeffs", "DYNSYSXCoeffs", "Dynamic System XCoeffs",
-                  0, 10000, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+          g_param_spec_int ("dynsys_xcoeff1", "DYNSYSXCoeff1", "Dynamic System XCoeff1",
+                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+  g_object_class_install_property (gobject_class, PROP_DYNSYS_YCOEFFS2,
+          g_param_spec_int ("dynsys_ycoeff2", "DYNSYSYCoeff2", "Dynamic System YCoeff2",
+                    0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+  g_object_class_install_property (gobject_class, PROP_DYNSYS_XCOEFFS2,
+          g_param_spec_int ("dynsys_xcoeff2", "DYNSYSXCoeff2", "Dynamic System XCoeff2",
+                    0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_BASSGAIN,
           g_param_spec_int ("dynsys_bassgain", "DYNSYSBassGain", "Dynamic System Bass Gain",
                   0, 10000, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_SIDEGAIN,
-          g_param_spec_int ("dynsys_sidegain", "DYNSYSSideGain", "Dynamic System Side Gain",
-                  0, 10000, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
-
+          g_param_spec_int ("dynsys_sidegain1", "DYNSYSSideGain1", "Dynamic System Side Gain 1",
+                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+  g_object_class_install_property (gobject_class, PROP_DYNSYS_SIDEGAIN2,
+          g_param_spec_int ("dynsys_sidegain2", "DYNSYSSideGain2", "Dynamic System Side Gain 2",
+                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   /* vse */
   g_object_class_install_property (gobject_class, PROP_VSE_ENABLE,
       g_param_spec_boolean ("vse_enable", "VSEEnabled", "Enable viper spectrum extend",
@@ -465,16 +475,17 @@ static void sync_all_parameters (Gstviperfx *self)
   viperfx_command_set_px4_vx4x1 (self->vfx,
       PARAM_HPFX_VHE_PROCESS_ENABLED, self->vhe_enabled);
 
+  // Dynsys
   viperfx_command_set_px4_vx4x1(self->vfx,
           PARAM_HPFX_DYNSYS_PROCESS_ENABLED, self->dynsys_enabled);
-  viperfx_command_set_px4_vx4x1(self->vfx,
-          PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs);
-  viperfx_command_set_px4_vx4x1(self->vfx,
-          PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs);
+  viperfx_command_set_px4_vx4x2(self->vfx,
+          PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs,self->dynsys_xcoeffs2);
+  viperfx_command_set_px4_vx4x2(self->vfx,
+          PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs,self->dynsys_ycoeffs2);
   viperfx_command_set_px4_vx4x1(self->vfx,
           PARAM_HPFX_DYNSYS_BASSGAIN, self->dynsys_bassgain);
-  viperfx_command_set_px4_vx4x1(self->vfx,
-          PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain);
+  viperfx_command_set_px4_vx4x2(self->vfx,
+          PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain,self->dynsys_sidegain2);
 
   // vse
   viperfx_command_set_px4_vx4x1 (self->vfx,
@@ -647,7 +658,10 @@ gst_viperfx_init (Gstviperfx *self)
   self->dynsys_enabled = FALSE;
   self->dynsys_xcoeffs = 0;
   self->dynsys_ycoeffs = 0;
+  self->dynsys_xcoeffs2 = 0;
+  self->dynsys_ycoeffs2 = 0;
   self->dynsys_sidegain = 0;
+  self->dynsys_sidegain2 = 0;
   self->dynsys_bassgain = 0;
   // vse
   self->vse_enabled = FALSE;
@@ -1484,18 +1498,40 @@ gst_viperfx_set_property (GObject * object, guint prop_id,
       case PROP_DYNSYS_XCOEFFS:
       {
           g_mutex_lock (&self->lock);
+
           self->dynsys_xcoeffs = g_value_get_int (value);
-          viperfx_command_set_px4_vx4x1 (self->vfx,
-                                         PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs);
+          viperfx_command_set_px4_vx4x2 (self->vfx,
+                                         PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs,self->dynsys_xcoeffs2);
           g_mutex_unlock (&self->lock);
       }
           break;
       case PROP_DYNSYS_YCOEFFS:
       {
           g_mutex_lock (&self->lock);
+
           self->dynsys_ycoeffs = g_value_get_int (value);
-          viperfx_command_set_px4_vx4x1 (self->vfx,
-                                         PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs);
+          viperfx_command_set_px4_vx4x2 (self->vfx,
+                                         PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs, self->dynsys_ycoeffs2);
+          g_mutex_unlock (&self->lock);
+      }
+          break;
+      case PROP_DYNSYS_XCOEFFS2:
+      {
+          g_mutex_lock (&self->lock);
+
+          self->dynsys_xcoeffs2 = g_value_get_int (value);
+          viperfx_command_set_px4_vx4x2 (self->vfx,
+                                         PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs,self->dynsys_xcoeffs2);
+          g_mutex_unlock (&self->lock);
+      }
+          break;
+      case PROP_DYNSYS_YCOEFFS2:
+      {
+          g_mutex_lock (&self->lock);
+
+          self->dynsys_ycoeffs2 = g_value_get_int (value);
+          viperfx_command_set_px4_vx4x2 (self->vfx,
+                                         PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs, self->dynsys_ycoeffs2);
           g_mutex_unlock (&self->lock);
       }
           break;
@@ -1511,13 +1547,25 @@ gst_viperfx_set_property (GObject * object, guint prop_id,
       case PROP_DYNSYS_SIDEGAIN:
       {
           g_mutex_lock (&self->lock);
+
           self->dynsys_sidegain = g_value_get_int (value);
-          viperfx_command_set_px4_vx4x1 (self->vfx,
-                                         PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain);
+
+          viperfx_command_set_px4_vx4x2 (self->vfx,
+                                         PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain,self->dynsys_sidegain2);
           g_mutex_unlock (&self->lock);
       }
           break;
+      case PROP_DYNSYS_SIDEGAIN2:
+      {
+          g_mutex_lock (&self->lock);
 
+          self->dynsys_sidegain2 = g_value_get_int (value);
+
+          viperfx_command_set_px4_vx4x2 (self->vfx,
+                                         PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain,self->dynsys_sidegain2);
+          g_mutex_unlock (&self->lock);
+      }
+          break;
 
       default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
