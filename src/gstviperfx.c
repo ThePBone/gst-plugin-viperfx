@@ -334,7 +334,7 @@ gst_viperfx_class_init (GstviperfxClass * klass)
           0, 2, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_VB_FREQ,
       g_param_spec_int ("vb_freq", "VBFreq", "ViPER bass frequency",
-          50, 160, 76, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+          20, 200, 76, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_VB_GAIN,
       g_param_spec_int ("vb_gain", "VBGain", "ViPER bass gain",
           0, 800, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
