@@ -204,25 +204,25 @@ gst_viperfx_class_init (GstviperfxClass * klass)
                   FALSE, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_YCOEFFS,
           g_param_spec_int ("dynsys_ycoeff1", "DYNSYSYCoeff1", "Dynamic System YCoeff1",
-                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                  0,200,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_XCOEFFS,
           g_param_spec_int ("dynsys_xcoeff1", "DYNSYSXCoeff1", "Dynamic System XCoeff1",
-                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                  0,2000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_YCOEFFS2,
           g_param_spec_int ("dynsys_ycoeff2", "DYNSYSYCoeff2", "Dynamic System YCoeff2",
-                    0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                    0,200,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_XCOEFFS2,
           g_param_spec_int ("dynsys_xcoeff2", "DYNSYSXCoeff2", "Dynamic System XCoeff2",
-                    0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                    5000,7000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_BASSGAIN,
           g_param_spec_int ("dynsys_bassgain", "DYNSYSBassGain", "Dynamic System Bass Gain",
-                  0, 10000, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                  0, 2100, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_SIDEGAIN,
           g_param_spec_int ("dynsys_sidegain1", "DYNSYSSideGain1", "Dynamic System Side Gain 1",
-                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                  0,100,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_SIDEGAIN2,
           g_param_spec_int ("dynsys_sidegain2", "DYNSYSSideGain2", "Dynamic System Side Gain 2",
-                  0,10000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                  0,100,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   /* vse */
   g_object_class_install_property (gobject_class, PROP_VSE_ENABLE,
       g_param_spec_boolean ("vse_enable", "VSEEnabled", "Enable viper spectrum extend",
