@@ -213,7 +213,7 @@ gst_viperfx_class_init (GstviperfxClass * klass)
                     0,200,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_XCOEFFS2,
           g_param_spec_int ("dynsys_xcoeff2", "DYNSYSXCoeff2", "Dynamic System XCoeff2",
-                    5000,7000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+                    0,7000,0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
   g_object_class_install_property (gobject_class, PROP_DYNSYS_BASSGAIN,
           g_param_spec_int ("dynsys_bassgain", "DYNSYSBassGain", "Dynamic System Bass Gain",
                   0, 2100, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
