@@ -50,6 +50,9 @@ enum
   PROP_DYNSYS_YCOEFFS2,
   PROP_DYNSYS_SIDEGAIN2,
   PROP_DYNSYS_BASSGAIN,
+  /* ddc */
+  PROP_VDDC_PROCESS_ENABLED,
+  PROP_VDDC_COEFFS,
   /* vhe */
   PROP_VHE_ENABLE,
   PROP_VHE_LEVEL,
@@ -197,6 +200,14 @@ gst_viperfx_class_init (GstviperfxClass * klass)
   g_object_class_install_property (gobject_class, PROP_VHE_LEVEL,
       g_param_spec_int ("vhe_level", "VHELevel", "VHE level",
           0, 4, 0, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+
+  /* ddc */
+  g_object_class_install_property (gobject_class, PROP_VDDC_PROCESS_ENABLED,
+          g_param_spec_boolean ("ddc_enable", "DDCEnabled", "Enable ViPER DDC",
+                  FALSE, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
+  g_object_class_install_property (gobject_class, PROP_VDDC_COEFFS,
+          g_param_spec_string ("ddc_coeffs", "DDCCoeffs", "DDC Coeffs",
+                  "", G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
 
   /* Dynsys */
   g_object_class_install_property (gobject_class, PROP_DYNSYS_ENABLED,
@@ -469,6 +480,11 @@ static void sync_all_parameters (Gstviperfx *self)
   viperfx_command_set_px4_vx4x1 (self->vfx,
       PARAM_HPFX_CONV_PROCESS_ENABLED, self->conv_enabled);
 
+  // ddc
+  viperfx_command_set_px4_vx4x1 (self->vfx,
+         PARAM_HPFX_VDDC_PROCESS_ENABLED, self->ddc_enabled);
+  viperfx_command_set_px4_vx1x1024(self->vfx,PARAM_HPFX_VDDC_COEFFS,self->ddc_coeffs);
+
   // vhe
   viperfx_command_set_px4_vx4x1 (self->vfx,
       PARAM_HPFX_VHE_EFFECT_LEVEL, self->vhe_level);
@@ -651,6 +667,10 @@ gst_viperfx_init (Gstviperfx *self)
   memset (self->conv_ir_path, 0,
       sizeof(self->conv_ir_path));
   self->conv_cc_level = 0;
+  // ddc
+  self->ddc_enabled = FALSE;
+  memset (self->ddc_coeffs, 0,
+          sizeof(self->ddc_coeffs));
   // vhe
   self->vhe_enabled = FALSE;
   self->vhe_level = 0;
@@ -1566,6 +1586,30 @@ gst_viperfx_set_property (GObject * object, guint prop_id,
           g_mutex_unlock (&self->lock);
       }
           break;
+
+      case PROP_VDDC_PROCESS_ENABLED:
+      {
+          g_mutex_lock (&self->lock);
+          self->ddc_enabled = g_value_get_boolean (value);
+          viperfx_command_set_px4_vx4x1 (self->vfx,
+                                         PARAM_HPFX_VDDC_PROCESS_ENABLED, self->ddc_enabled);
+          g_mutex_unlock (&self->lock);
+      }
+      break;
+
+      case PROP_VDDC_COEFFS:
+      {
+          g_mutex_lock (&self->lock);
+          if (strlen (g_value_get_string (value)) < 1024 && strlen (g_value_get_string (value)) > 0) {
+              memset (self->ddc_coeffs, 0,
+                      sizeof(self->ddc_coeffs));
+              strcpy(self->ddc_coeffs,
+                     g_value_get_string (value));
+              viperfx_command_set_px4_vx1x1024 (self->vfx,PARAM_HPFX_VDDC_COEFFS, self->ddc_coeffs);
+          }
+          g_mutex_unlock (&self->lock);
+      }
+      break;
 
       default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <stdio.h>
 #include "viperfx_so.h"
 
 #define ViPERFX_SO "libviperfx.so"
@@ -79,6 +80,52 @@ int viperfx_command_set_px4_vx4x3 (viperfx_interface * intf,
   return TRUE;
 }
 
+int viperfx_command_set_px4_vx1x1024 (viperfx_interface * intf,
+                                   int32_t param, const char *floatData)
+{
+    if(strlen(floatData) < 1){
+        printf("floatData < 1\n"); //Debug message
+        return FALSE;
+    }
+    char input[strlen(floatData)];
+    strncpy(input,floatData,strlen(floatData));
+
+    char *token = strtok(input, ";");
+
+    float size=strtof(token,NULL);
+    printf("%f:", size);
+    float signal[25];
+    signal[0] = size;
+    int i=0;
+
+    while (token != NULL) //Split the string into an array
+    {
+        printf("%s\n", token);
+        token = strtok(NULL, ";");
+        if(token !=NULL){
+            signal[i+1] = strtof(token,NULL);
+            printf("%f:", signal[i+1]);
+            i=i+1;
+        }
+    }
+
+    char cmd_data[3 + 1024];
+    int32_t * cmd_data_int = (int32_t *)cmd_data;
+
+    memset (cmd_data, 0, sizeof(cmd_data));
+    cmd_data_int[0] = PARAM_HPFX_VDDC_COEFFS;
+    cmd_data_int[1] = 25*(sizeof(float));
+    memcpy (&cmd_data_int[2],
+            signal, 25*(sizeof(float)));
+
+    if (intf->command (intf, COMMAND_CODE_SET,
+                    sizeof(cmd_data), cmd_data, NULL, NULL) != 0) {
+     return FALSE;
+ }
+    return TRUE;
+}
+
+
 int viperfx_command_set_ir_path (viperfx_interface * intf,
     const char * pathname)
 {
@@ -101,3 +148,4 @@ int viperfx_command_set_ir_path (viperfx_interface * intf,
   }
   return TRUE;
 }
+
