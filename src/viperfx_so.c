@@ -83,6 +83,8 @@ int viperfx_command_set_px4_vx4x3 (viperfx_interface * intf,
 int viperfx_command_set_px4_vx1x1024 (viperfx_interface * intf,
                                    int32_t param, const char *floatData)
 {
+
+    //----- This section is WIP -----
     if(strlen(floatData) < 1){
         printf("floatData < 1\n"); //Debug message
         return FALSE;
@@ -92,36 +94,72 @@ int viperfx_command_set_px4_vx1x1024 (viperfx_interface * intf,
 
     char *token = strtok(input, ";");
 
-    float size=strtof(token,NULL);
-    printf("%f:", size);
-    float signal[25];
+    double size=strtod(token,NULL);
+    printf("%.15f:", size);
+    double signal[25];
     signal[0] = size;
     int i=0;
+    unsigned char* bAry = calloc(1024,1);
 
     while (token != NULL) //Split the string into an array
     {
         printf("%s\n", token);
         token = strtok(NULL, ";");
         if(token !=NULL){
-            signal[i+1] = strtof(token,NULL);
-            printf("%f:", signal[i+1]);
             i=i+1;
+            double tmp = strtod(token,NULL);
+            signal[i] = tmp;
+            printf("%.15f:",signal[i]);
+
         }
     }
+    int length = i;
+    printf("Length: %u (%u)\n",length,length*(sizeof(double)));
+    memcpy(bAry, signal, length*(sizeof(double)));
+    for (i=0; i<length*(sizeof(double)); i++){
+        printf("%u,",bAry[i]);
+    }
+    //---------------------------
 
-    char cmd_data[3 + 1024];
+    char cmd_data[4 + 1024];
     int32_t * cmd_data_int = (int32_t *)cmd_data;
+
+    if (sizeof(signal) >= 1024)
+        return FALSE;
 
     memset (cmd_data, 0, sizeof(cmd_data));
     cmd_data_int[0] = PARAM_HPFX_VDDC_COEFFS;
-    cmd_data_int[1] = 25*(sizeof(float));
-    memcpy (&cmd_data_int[2],
-            signal, 25*(sizeof(float)));
+    cmd_data_int[1] = 1024;
+    cmd_data_int[2] = (int32_t)sizeof(bAry);
+    memcpy (&cmd_data_int[3],
+            bAry, sizeof(bAry));
 
     if (intf->command (intf, COMMAND_CODE_SET,
                     sizeof(cmd_data), cmd_data, NULL, NULL) != 0) {
      return FALSE;
  }
+    return TRUE;
+}
+int viperfx_command_set_px4_vx1x256 (viperfx_interface * intf,int32_t param,
+                                 const char * str)
+{
+    char cmd_data[4 + 256];
+    int32_t * cmd_data_int = (int32_t *)cmd_data;
+
+    if (strlen (str) >= 256)
+        return FALSE;
+
+    memset (cmd_data, 0, sizeof(cmd_data));
+    cmd_data_int[0] = param;
+    cmd_data_int[1] = 256;
+    cmd_data_int[2] = (int32_t)strlen (str);
+    memcpy (&cmd_data_int[3],
+            str, strlen (str));
+
+    if (intf->command (intf, COMMAND_CODE_SET,
+                       sizeof(cmd_data), cmd_data, NULL, NULL) != 0) {
+        return FALSE;
+    }
     return TRUE;
 }
 

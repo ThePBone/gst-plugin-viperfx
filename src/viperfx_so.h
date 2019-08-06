@@ -201,6 +201,8 @@ int viperfx_command_set_ir_path (viperfx_interface * intf,
     const char * pathname);
 int viperfx_command_set_px4_vx1x1024 (viperfx_interface * intf,
                                       int32_t param, const char* floatData);
+int viperfx_command_set_px4_vx1x256 (viperfx_interface * intf,int32_t param,
+                                     const char * str);
 #ifdef __cplusplus
 }
 #endif

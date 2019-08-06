@@ -20,108 +20,108 @@ typedef struct _Gstviperfx      Gstviperfx;
 typedef struct _GstviperfxClass GstviperfxClass;
 
 struct _Gstviperfx {
-  GstAudioFilter audiofilter;
+    GstAudioFilter audiofilter;
 
-  /* properties */
-  // global enable
-  gboolean fx_enabled;
-  // Dynamic System
-  gboolean dynsys_enabled;
-  gint32 dynsys_xcoeffs;
-  gint32 dynsys_ycoeffs;
-  gint32 dynsys_sidegain;
-  gint32 dynsys_xcoeffs2;
-  gint32 dynsys_ycoeffs2;
-  gint32 dynsys_sidegain2;
-  gint32 dynsys_bassgain;
-  // ddc
-  gboolean ddc_enabled;
-  gchar ddc_coeffs[1024];
-  // convolver
-  gboolean conv_enabled;
-  gchar conv_ir_path[256];
-  gint32 conv_cc_level;
-  // vhe
-  gboolean vhe_enabled;
-  gint32 vhe_level;
-  // vse
-  gboolean vse_enabled;
-  gint32 vse_ref_bark;
-  gint32 vse_bark_cons;
-  // equalizer
-  gboolean eq_enabled;
-  gint32 eq_band_level[10];
-  // colorful music
-  gboolean colm_enabled;
-  gint32 colm_widening;
-  gint32 colm_midimage;
-  gint32 colm_depth;
-  // diff surr
-  gboolean ds_enabled;
-  gint32 ds_level;
-  // reverb
-  gboolean reverb_enabled;
-  gint32 reverb_roomsize;
-  gint32 reverb_width;
-  gint32 reverb_damp;
-  gint32 reverb_wet;
-  gint32 reverb_dry;
-  // agc
-  gboolean agc_enabled;
-  gint32 agc_ratio;
-  gint32 agc_volume;
-  gint32 agc_maxgain;
-  // viper bass
-  gboolean vb_enabled;
-  gint32 vb_mode;
-  gint32 vb_freq;
-  gint32 vb_gain;
-  // viper clarity
-  gboolean vc_enabled;
-  gint32 vc_mode;
-  gint32 vc_level;
-  // cure
-  gboolean cure_enabled;
-  gint32 cure_level;
-  // tube
-  gboolean tube_enabled;
-  // analog-x
-  gboolean ax_enabled;
-  gint32 ax_mode;
-  // fet compressor
-  gboolean fetcomp_enabled;
-  gint32 fetcomp_threshold;
-  gint32 fetcomp_ratio;
-  gint32 fetcomp_kneewidth;
-  gboolean fetcomp_autoknee;
-  gint32 fetcomp_gain;
-  gboolean fetcomp_autogain;
-  gint32 fetcomp_attack;
-  gboolean fetcomp_autoattack;
-  gint32 fetcomp_release;
-  gboolean fetcomp_autorelease;
-  gint32 fetcomp_meta_kneemulti;
-  gint32 fetcomp_meta_maxattack;
-  gint32 fetcomp_meta_maxrelease;
-  gint32 fetcomp_meta_crest;
-  gint32 fetcomp_meta_adapt;
-  gboolean fetcomp_noclip;
-  // output volume
-  gint32 out_volume;
-  // output pan
-  gint32 out_pan;
-  // limiter
-  gint32 lim_threshold;
+    /* properties */
+    // global enable
+    gboolean fx_enabled;
+    // Dynamic System
+    gboolean dynsys_enabled;
+    gint32 dynsys_xcoeffs;
+    gint32 dynsys_ycoeffs;
+    gint32 dynsys_sidegain;
+    gint32 dynsys_xcoeffs2;
+    gint32 dynsys_ycoeffs2;
+    gint32 dynsys_sidegain2;
+    gint32 dynsys_bassgain;
+    // ddc
+    gboolean ddc_enabled;
+    gchar ddc_coeffs[1024];
+    // convolver
+    gboolean conv_enabled;
+    gchar conv_ir_path[256];
+    gint32 conv_cc_level;
+    // vhe
+    gboolean vhe_enabled;
+    gint32 vhe_level;
+    // vse
+    gboolean vse_enabled;
+    gint32 vse_ref_bark;
+    gint32 vse_bark_cons;
+    // equalizer
+    gboolean eq_enabled;
+    gint32 eq_band_level[10];
+    // colorful music
+    gboolean colm_enabled;
+    gint32 colm_widening;
+    gint32 colm_midimage;
+    gint32 colm_depth;
+    // diff surr
+    gboolean ds_enabled;
+    gint32 ds_level;
+    // reverb
+    gboolean reverb_enabled;
+    gint32 reverb_roomsize;
+    gint32 reverb_width;
+    gint32 reverb_damp;
+    gint32 reverb_wet;
+    gint32 reverb_dry;
+    // agc
+    gboolean agc_enabled;
+    gint32 agc_ratio;
+    gint32 agc_volume;
+    gint32 agc_maxgain;
+    // viper bass
+    gboolean vb_enabled;
+    gint32 vb_mode;
+    gint32 vb_freq;
+    gint32 vb_gain;
+    // viper clarity
+    gboolean vc_enabled;
+    gint32 vc_mode;
+    gint32 vc_level;
+    // cure
+    gboolean cure_enabled;
+    gint32 cure_level;
+    // tube
+    gboolean tube_enabled;
+    // analog-x
+    gboolean ax_enabled;
+    gint32 ax_mode;
+    // fet compressor
+    gboolean fetcomp_enabled;
+    gint32 fetcomp_threshold;
+    gint32 fetcomp_ratio;
+    gint32 fetcomp_kneewidth;
+    gboolean fetcomp_autoknee;
+    gint32 fetcomp_gain;
+    gboolean fetcomp_autogain;
+    gint32 fetcomp_attack;
+    gboolean fetcomp_autoattack;
+    gint32 fetcomp_release;
+    gboolean fetcomp_autorelease;
+    gint32 fetcomp_meta_kneemulti;
+    gint32 fetcomp_meta_maxattack;
+    gint32 fetcomp_meta_maxrelease;
+    gint32 fetcomp_meta_crest;
+    gint32 fetcomp_meta_adapt;
+    gboolean fetcomp_noclip;
+    // output volume
+    gint32 out_volume;
+    // output pan
+    gint32 out_pan;
+    // limiter
+    gint32 lim_threshold;
 
-  /* < private > */
-  void *so_handle;
-  fn_viperfx_ep so_entrypoint;
-  viperfx_interface *vfx;
-  GMutex lock;
+    /* < private > */
+    void *so_handle;
+    fn_viperfx_ep so_entrypoint;
+    viperfx_interface *vfx;
+    GMutex lock;
 };
 
 struct _GstviperfxClass {
-  GstAudioFilterClass parent_class;
+    GstAudioFilterClass parent_class;
 };
 
 GType gst_viperfx_get_type (void);
