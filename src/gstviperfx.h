@@ -109,6 +109,8 @@ struct _Gstviperfx {
   gint32 out_pan;
   // limiter
   gint32 lim_threshold;
+  // working directory
+  gchar workdir[4096];
 
   /* < private > */
   void *so_handle;

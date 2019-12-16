@@ -21,6 +21,7 @@
 #include <gst/audio/gstaudiofilter.h>
 #include <gst/controller/controller.h>
 #include "gstviperfx.h"
+#include "autoreload.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_viperfx_debug);
 #define GST_CAT_DEFAULT gst_viperfx_debug
@@ -129,7 +130,8 @@ enum
   /* output pan */
   PROP_OUT_PAN,
   /* limiter */
-  PROP_LIM_THRESHOLD
+  PROP_LIM_THRESHOLD,
+  PROP_WORKDIR
 };
 
 #define ALLOWED_CAPS \
@@ -439,6 +441,11 @@ gst_viperfx_class_init (GstviperfxClass * klass)
       g_param_spec_int ("lim_threshold", "LimThreshold", "Master limiter threshold (percent)",
           1, 100, 100, G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE));
 
+  g_object_class_install_property (gobject_class, PROP_WORKDIR,
+      g_param_spec_string ("working_directory", "WDir", "Path to the configuration folder (autoreload is disabled if this parameter is not set)",
+           "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+
   gst_element_class_set_static_metadata (gstelement_class,
     "viperfx",
     "Filter/Effect/Audio",
@@ -733,7 +740,10 @@ gst_viperfx_init (Gstviperfx *self)
   // limiter
   self->lim_threshold = 100;
 
-  /* initialize private resources */
+  memset (self->workdir, 0,
+            sizeof(self->workdir));
+
+    /* initialize private resources */
   self->vfx = NULL;
   self->so_handle = viperfx_load_library (NULL);
   if (self->so_handle == NULL) {
@@ -1566,7 +1576,15 @@ gst_viperfx_set_property (GObject * object, guint prop_id,
           g_mutex_unlock (&self->lock);
       }
           break;
-
+      case PROP_WORKDIR: {
+          g_mutex_lock(&self->lock);
+          memset (self->workdir , 0,
+                  sizeof(self->workdir ));
+          strcpy(self->workdir ,
+                 g_value_get_string (value));
+          g_mutex_unlock(&self->lock);
+      }
+          break;
       default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -1620,6 +1638,9 @@ gst_viperfx_setup (GstAudioFilter * base, const GstAudioInfo * info)
   self->vfx->reset (self->vfx);
   g_mutex_unlock (&self->lock);
 
+  //Initialize filewatcher service
+  InitFWatch(self);
+
   return TRUE;
 }
 
@@ -1643,6 +1664,10 @@ static GstFlowReturn
 gst_viperfx_transform_ip (GstBaseTransform * base, GstBuffer * buf)
 {
   Gstviperfx *filter = GST_VIPERFX (base);
+
+  //Check if configuration file has been changed
+  if(SynchronizeConfig(filter)==1)sync_all_parameters(filter);
+
   guint idx, num_samples;
   short *pcm_data;
   GstClockTime timestamp, stream_time;
