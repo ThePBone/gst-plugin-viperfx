@@ -1,0 +1,3 @@
+/home/tim/Development/gst-plugin-viperfx/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/tim/Development/gst-plugin-viperfx/cmake-build-debug/CMakeFiles/gst-plugin-viperfx.dir
+/home/tim/Development/gst-plugin-viperfx/cmake-build-debug/CMakeFiles/edit_cache.dir

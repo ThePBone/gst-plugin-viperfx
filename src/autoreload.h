@@ -35,7 +35,7 @@ pthread_mutex_t lock;
 pthread_t th1;
 
 /// [Thread] File watcher service
-/// Sets reloadRequired to 1 if audio.conf is been modified.
+/// Sets reloadRequired to 1 if audio.conf has been modified.
 void* DoFileCheck(void* args){
     int length;
     int fd;
@@ -213,6 +213,9 @@ void ParseConfiguration(char* dirpath,Gstviperfx* self){
 ///Check if a reload has been issued by the file-watcher. If yes, we will update all parameters
 int SynchronizeConfig(Gstviperfx* self){
     if(reloadRequired == 1){
+
+        viperfx_command_get_px4_vx4x1(self->vfx,0x08009);
+
         g_mutex_lock(&self->lock);
         ParseConfiguration(self->workdir,self);
         g_mutex_unlock(&self->lock);

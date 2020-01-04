@@ -1,0 +1,4 @@
+/home/tim/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/193.5233.103/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/tim/Development/gst-plugin-viperfx
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/tim/Development/gst-plugin-viperfx/cmake-build-debug

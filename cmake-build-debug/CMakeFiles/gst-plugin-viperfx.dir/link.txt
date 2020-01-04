@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -g  -shared -Wl,-soname,libgst-plugin-viperfx.so -o libgst-plugin-viperfx.so CMakeFiles/gst-plugin-viperfx.dir/src/gstviperfx.c.o CMakeFiles/gst-plugin-viperfx.dir/src/viperfx_so.c.o -lgstcontroller-1.0 -lgstaudio-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 -lpthread 

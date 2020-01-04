@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <dlfcn.h>
 #include "viperfx_so.h"
 
@@ -30,6 +31,28 @@ fn_viperfx_ep query_viperfx_entrypoint (void * handle)
   return (fn_viperfx_ep)dlsym (
       handle, ViPERFX_ENTRYPOINT);
 }
+
+int32_t viperfx_command_get_px4_vx4x1 (viperfx_interface * intf,
+                                   int32_t param)
+{
+  int32_t cmd_data[1];
+  cmd_data[0] = param;
+  int32_t *ret = malloc(sizeof(int32_t));
+  uint32_t *retsize = malloc(sizeof(uint32_t));
+
+  if (intf->command (intf, COMMAND_CODE_GET,
+                     sizeof(cmd_data), cmd_data, retsize, ret) != 0) {
+    return -1;
+  }
+
+  if(*retsize != 4) {
+    printf("[E] Size of reply != 4 bytes, actual size: %u bytes\n",*retsize);
+    return -1;
+  }
+
+  return ret[0];
+}
+
 
 int viperfx_command_set_px4_vx4x1 (viperfx_interface * intf,
 	int32_t param, int32_t value)

@@ -1682,7 +1682,6 @@ gst_viperfx_transform_ip (GstBaseTransform * base, GstBuffer * buf)
 
   if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_GAP)))
     return GST_FLOW_OK;
-
   gst_buffer_map (buf, &map, GST_MAP_READWRITE);
   num_samples = map.size / GST_AUDIO_FILTER_BPS (filter) / 2;
   pcm_data = (short *)(map.data);
