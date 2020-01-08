@@ -115,10 +115,13 @@ int32_t viperfx_command_get_px4_vx4x1 (viperfx_interface * intf,
                      sizeof(cmd_data), cmd_data, retsize, ret) != 0) {
     return -1;
   }
-
-  if(*retsize != 4) {
+  if(*retsize == 0){
+    printf("[E] Empty reply\n");
+    return -2;
+  }
+  else if(*retsize != 4) {
     printf("[E] Size of reply != 4 bytes, actual size: %u bytes\n",*retsize);
-    return -1;
+    return -3;
   }
 
   return ret[0];
