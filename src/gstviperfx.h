@@ -152,7 +152,11 @@ struct _Gstviperfx {
   fn_viperfx_ep so_entrypoint;
   viperfx_interface *vfx;
   GMutex lock;
-  guint dbus_owner_id;
+  guint32 samplerate;
+  guint32 dbus_owner_id;
+  guint32 sine_sample_counter;
+  gint32 sine_duration;
+  gint32 sine_frequency;
 };
 
 struct _GstviperfxClass {

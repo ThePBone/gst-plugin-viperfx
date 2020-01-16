@@ -17,6 +17,7 @@
 #include <gst/audio/audio.h>
 #include <gst/audio/gstaudiofilter.h>
 #include <gst/controller/controller.h>
+#include <math.h>
 #include "gstviperfx.h"
 #include "dbus-interface.h"
 
@@ -772,6 +773,11 @@ gst_viperfx_init (Gstviperfx *self)
       }
     }
   }
+
+  self->samplerate = 0;
+  self->sine_sample_counter = -1;
+  self->sine_duration = -1;
+  self->sine_frequency = 100;
 
   if (self->vfx != NULL)
     sync_all_parameters (self, PARAM_GROUP_ALL);
@@ -1615,23 +1621,22 @@ static gboolean
 gst_viperfx_setup (GstAudioFilter * base, const GstAudioInfo * info)
 {
   Gstviperfx *self = GST_VIPERFX (base);
-  gint sample_rate = 0;
 
   if (self->vfx == NULL)
     return FALSE;
 
   if (info) {
-    sample_rate = GST_AUDIO_INFO_RATE (info);
+    self->samplerate = GST_AUDIO_INFO_RATE (info);
   } else {
-    sample_rate = GST_AUDIO_FILTER_RATE (self);
+    self->samplerate = GST_AUDIO_FILTER_RATE (self);
   }
-  if (sample_rate <= 0)
+  if (self->samplerate <= 0)
     return FALSE;
 
-  GST_DEBUG_OBJECT (self, "current sample_rate = %d", sample_rate);
+  GST_DEBUG_OBJECT (self, "current sample_rate = %d", self->samplerate);
 
   g_mutex_lock (&self->lock);
-  if (!self->vfx->set_samplerate (self->vfx, sample_rate)) {
+  if (!self->vfx->set_samplerate (self->vfx, self->samplerate)) {
     g_mutex_unlock (&self->lock);
     return FALSE;
   }
@@ -1687,8 +1692,17 @@ gst_viperfx_transform_ip (GstBaseTransform * base, GstBuffer * buf)
     pcm_data[idx] >>= 1;
   if (filter->vfx != NULL) {
     g_mutex_lock (&filter->lock);
-    filter->vfx->process (filter->vfx,
-        pcm_data, (int)num_samples);
+    if(filter->sine_duration == -1)
+      filter->vfx->process (filter->vfx,
+          pcm_data, (int)num_samples);
+    else{
+      for (int n = 0; n < num_samples*2; n++)
+        pcm_data[n] = (short)(0.25 * SHRT_MAX * sin((M_PI * n * filter->sine_frequency) / 44100));
+      filter->sine_sample_counter += num_samples * 2;
+      if(filter->sine_duration < filter->sine_sample_counter)
+        filter->sine_duration = -1;
+    }
+
     g_mutex_unlock (&filter->lock);
   }
   gst_buffer_unmap (buf, &map);

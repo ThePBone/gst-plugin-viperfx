@@ -48,6 +48,15 @@ static const gchar introspection_xml[] =
   "    <method name='CommitProperties'>"
   "      <arg type='u' name='response' direction='out'/>"
   "    </method>"
+  "    <method name='PlayTestTone'>"
+  "      <arg type='u' name='freq' direction='in'/>"
+  "      <arg type='u' name='dur' direction='in'/>"
+  "      <arg type='u' name='response' direction='out'/>\""
+  "    </method>"
+  "    <signal name='PropertiesCommitted'>"
+  "      <arg type='u' name='bitmask' />"
+  "      <annotation name='org.gtk.GDBus.Annotation' value='Onsignal'/>"
+  "    </signal>"
   "    <property type='b' name='agc_enable' access='readwrite'/>"
   "    <property type='i' name='agc_maxgain' access='readwrite'/>"
   "    <property type='i' name='agc_ratio' access='readwrite'/>"
@@ -208,6 +217,15 @@ handle_method_call (GDBusConnection       *connection,
       ret = 2;
     else
       user->sync_all_parameters_fun(intf,PARAM_GROUP_ALL);
+
+    if(ret == 0) g_dbus_connection_emit_signal (connection,
+                                   NULL,
+                                   object_path,
+                                   interface_name,
+                                   "PropertiesCommitted",
+                                   g_variant_new ("(u)", PARAM_GROUP_ALL),
+                                   NULL);
+
     g_dbus_method_invocation_return_value (invocation,
                                            g_variant_new ("(u)", ret));
   }
@@ -225,8 +243,30 @@ handle_method_call (GDBusConnection       *connection,
       ret = 3;
     else
       user->sync_all_parameters_fun(intf,(PARAM_GROUP)bitmask);
+
+    if(ret == 0) g_dbus_connection_emit_signal (connection,
+                                   NULL,
+                                   object_path,
+                                   interface_name,
+                                   "PropertiesCommitted",
+                                   g_variant_new ("(u)", bitmask),
+                                   NULL);
+
     g_dbus_method_invocation_return_value (invocation,
                                            g_variant_new ("(u)", ret));
+  }
+  else if (g_strcmp0 (method_name, "PlayTestTone") == 0)
+  {
+    guint32 freq = 0x0;
+    guint32 dur = 0x0;
+    g_variant_get (parameters, "(uu)", &freq, &dur);
+    if(dur > 200000) dur = 200000;
+    intf->sine_duration = dur;
+    intf->sine_sample_counter = 0;
+    intf->sine_frequency = freq;
+    g_dbus_method_invocation_return_value (invocation,
+                                           g_variant_new ("(u)", 0));
+
   }
 }
 

@@ -17,7 +17,6 @@ file(GLOB SOURCES
 
 add_library(gst-plugin-viperfx SHARED ${SOURCES})
 
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0 gio-unix-2.0)
 target_include_directories(gst-plugin-viperfx PUBLIC ${GST_INCLUDE_DIRS})
 target_compile_options(gst-plugin-viperfx PUBLIC ${GST_CFLAGS})
