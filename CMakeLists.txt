@@ -21,3 +21,5 @@ pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0 gio-unix-2.0)
 target_include_directories(gst-plugin-viperfx PUBLIC ${GST_INCLUDE_DIRS})
 target_compile_options(gst-plugin-viperfx PUBLIC ${GST_CFLAGS})
 target_link_libraries(gst-plugin-viperfx ${GST_LIBRARIES} pthread PkgConfig::deps)
+
+set_target_properties(gst-plugin-viperfx PROPERTIES OUTPUT_NAME "gstviperfx")
