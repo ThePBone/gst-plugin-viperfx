@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "hicpp-signed-bitwise"
 #ifndef __GST_VIPERFX_H__
 #define __GST_VIPERFX_H__
 
@@ -7,6 +9,7 @@
 #include <gst/audio/gstaudiofilter.h>
 #include "viperfx_so.h"
 
+
 G_BEGIN_DECLS
 
 #define GST_TYPE_VIPERFX            (gst_viperfx_get_type())
@@ -15,6 +18,40 @@ G_BEGIN_DECLS
 #define GST_VIPERFX_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj) ,GST_TYPE_VIPERFX,GstviperfxClass))
 #define GST_IS_VIPERFX(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_VIPERFX))
 #define GST_IS_VIPERFX_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass) ,GST_TYPE_VIPERFX))
+
+#define PACKAGE "viperfx-plugin"
+#define VERSION "2.0.0"
+
+#define ALLOWED_CAPS \
+  "audio/x-raw,"                            \
+  " format=(string){"GST_AUDIO_NE(S16)"},"  \
+  " rate=(int)[44100,MAX],"                 \
+  " channels=(int)2,"                       \
+  " layout=(string)interleaved"
+
+typedef enum
+{
+  PARAM_GROUP_NONE    = 0x0000,
+  PARAM_GROUP_AGC     = (1u << 0),
+  PARAM_GROUP_AX      = (1u << 1),
+  PARAM_GROUP_COLM    = (1u << 2),
+  PARAM_GROUP_CONV    = (1u << 3),
+  PARAM_GROUP_CURE    = (1u << 4),
+  PARAM_GROUP_DS      = (1u << 5),
+  PARAM_GROUP_DYNSYS  = (1u << 6),
+  PARAM_GROUP_EQ      = (1u << 7),
+  PARAM_GROUP_FETCOMP = (1u << 8),
+  PARAM_GROUP_LIM     = (1u << 9),
+  PARAM_GROUP_MSWITCH = (1u << 10),
+  PARAM_GROUP_REVERB  = (1u << 11),
+  PARAM_GROUP_TUBE    = (1u << 12),
+  PARAM_GROUP_VB      = (1u << 13),
+  PARAM_GROUP_VC      = (1u << 14),
+  PARAM_GROUP_VHE     = (1u << 15),
+  PARAM_GROUP_VSE     = (1u << 16),
+  PARAM_GROUP_ALL     = 0x1FFFF
+} PARAM_GROUP;
+
 
 typedef struct _Gstviperfx      Gstviperfx;
 typedef struct _GstviperfxClass GstviperfxClass;
@@ -36,7 +73,7 @@ struct _Gstviperfx {
   gint32 dynsys_bassgain;
   // convolver
   gboolean conv_enabled;
-  gchar conv_ir_path[256];
+  gchar *conv_ir_path;
   gint32 conv_cc_level;
   // vhe
   gboolean vhe_enabled;
@@ -115,6 +152,11 @@ struct _Gstviperfx {
   fn_viperfx_ep so_entrypoint;
   viperfx_interface *vfx;
   GMutex lock;
+  guint32 samplerate;
+  guint32 dbus_owner_id;
+  guint32 sine_sample_counter;
+  gint32 sine_duration;
+  gint32 sine_frequency;
 };
 
 struct _GstviperfxClass {
@@ -126,3 +168,5 @@ GType gst_viperfx_get_type (void);
 G_END_DECLS
 
 #endif /* __GST_VIPERFX_H__ */
+
+#pragma clang diagnostic pop

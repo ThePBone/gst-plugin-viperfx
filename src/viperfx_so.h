@@ -199,6 +199,8 @@ int viperfx_command_set_px4_vx4x3 (viperfx_interface * intf,
 	int32_t param, int32_t value_l, int32_t value_h, int32_t value_e);
 int viperfx_command_set_ir_path (viperfx_interface * intf,
     const char * pathname);
+int32_t viperfx_command_get_px4_vx4x1 (viperfx_interface * intf,
+                                       int32_t param);
 
 #ifdef __cplusplus
 }

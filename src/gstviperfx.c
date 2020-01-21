@@ -9,9 +9,6 @@
  * </refsect2>
  */
 
-#define PACKAGE "viperfx-plugin"
-#define VERSION "1.1.0"
-
 #include <stdio.h>
 #include <string.h>
 #include <gst/gst.h>
@@ -20,7 +17,9 @@
 #include <gst/audio/audio.h>
 #include <gst/audio/gstaudiofilter.h>
 #include <gst/controller/controller.h>
+#include <math.h>
 #include "gstviperfx.h"
+#include "dbus-interface.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_viperfx_debug);
 #define GST_CAT_DEFAULT gst_viperfx_debug
@@ -131,13 +130,6 @@ enum
   /* limiter */
   PROP_LIM_THRESHOLD
 };
-
-#define ALLOWED_CAPS \
-  "audio/x-raw,"                            \
-  " format=(string){"GST_AUDIO_NE(S16)"},"  \
-  " rate=(int)[44100,MAX],"                 \
-  " channels=(int)2,"                       \
-  " layout=(string)interleaved"
 
 #define gst_viperfx_parent_class parent_class
 G_DEFINE_TYPE (Gstviperfx, gst_viperfx, GST_TYPE_AUDIO_FILTER);
@@ -458,175 +450,202 @@ gst_viperfx_class_init (GstviperfxClass * klass)
 
 /* sync all parameters to fx core
 */
-static void sync_all_parameters (Gstviperfx *self)
-{
+static void sync_all_parameters (Gstviperfx *self, PARAM_GROUP grp) {
   int32_t idx;
 
   // convolver
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_CONV_CROSSCHANNEL, self->conv_cc_level);
-  viperfx_command_set_ir_path (self->vfx, self->conv_ir_path);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_CONV_PROCESS_ENABLED, self->conv_enabled);
-
+  if ((grp & PARAM_GROUP_CONV) == PARAM_GROUP_CONV || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_CONV_CROSSCHANNEL, self->conv_cc_level);
+    viperfx_command_set_ir_path(self->vfx, self->conv_ir_path);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_CONV_PROCESS_ENABLED, self->conv_enabled);
+  }
   // vhe
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VHE_EFFECT_LEVEL, self->vhe_level);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VHE_PROCESS_ENABLED, self->vhe_enabled);
-
+  if ((grp & PARAM_GROUP_VHE) == PARAM_GROUP_VHE || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VHE_EFFECT_LEVEL, self->vhe_level);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VHE_PROCESS_ENABLED, self->vhe_enabled);
+  }
   // Dynsys
-  viperfx_command_set_px4_vx4x1(self->vfx,
-          PARAM_HPFX_DYNSYS_PROCESS_ENABLED, self->dynsys_enabled);
-  viperfx_command_set_px4_vx4x2(self->vfx,
-          PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs,self->dynsys_xcoeffs2);
-  viperfx_command_set_px4_vx4x2(self->vfx,
-          PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs,self->dynsys_ycoeffs2);
-  viperfx_command_set_px4_vx4x1(self->vfx,
-          PARAM_HPFX_DYNSYS_BASSGAIN, self->dynsys_bassgain);
-  viperfx_command_set_px4_vx4x2(self->vfx,
-          PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain,self->dynsys_sidegain2);
+  if ((grp & PARAM_GROUP_DYNSYS) == PARAM_GROUP_DYNSYS || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_DYNSYS_PROCESS_ENABLED, self->dynsys_enabled);
+    viperfx_command_set_px4_vx4x2(self->vfx,
+                                  PARAM_HPFX_DYNSYS_XCOEFFS, self->dynsys_xcoeffs, self->dynsys_xcoeffs2);
+    viperfx_command_set_px4_vx4x2(self->vfx,
+                                  PARAM_HPFX_DYNSYS_YCOEFFS, self->dynsys_ycoeffs, self->dynsys_ycoeffs2);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_DYNSYS_BASSGAIN, self->dynsys_bassgain);
+    viperfx_command_set_px4_vx4x2(self->vfx,
+                                  PARAM_HPFX_DYNSYS_SIDEGAIN, self->dynsys_sidegain, self->dynsys_sidegain2);
+  }
 
   // vse
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VSE_REFERENCE_BARK, self->vse_ref_bark);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VSE_BARK_RECONSTRUCT, self->vse_bark_cons);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VSE_PROCESS_ENABLED, self->vse_enabled);
+  if ((grp & PARAM_GROUP_VSE) == PARAM_GROUP_VSE || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VSE_REFERENCE_BARK, self->vse_ref_bark);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VSE_BARK_RECONSTRUCT, self->vse_bark_cons);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VSE_PROCESS_ENABLED, self->vse_enabled);
+  }
 
   // equalizer
-  for (idx = 0; idx < 10; idx++) {
-    viperfx_command_set_px4_vx4x2 (self->vfx,
-        PARAM_HPFX_FIREQ_BANDLEVEL, idx, self->eq_band_level[idx]);
+  if ((grp & PARAM_GROUP_EQ) == PARAM_GROUP_EQ || grp == PARAM_GROUP_ALL) {
+    for (idx = 0; idx < 10; idx++) {
+      viperfx_command_set_px4_vx4x2(self->vfx,
+                                    PARAM_HPFX_FIREQ_BANDLEVEL, idx, self->eq_band_level[idx]);
+    }
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FIREQ_PROCESS_ENABLED, self->eq_enabled);
   }
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FIREQ_PROCESS_ENABLED, self->eq_enabled);
 
   // colorful music
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_COLM_WIDENING, self->colm_widening);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_COLM_MIDIMAGE, self->colm_midimage);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_COLM_DEPTH, self->colm_depth);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_COLM_PROCESS_ENABLED, self->colm_enabled);
+  if ((grp & PARAM_GROUP_COLM) == PARAM_GROUP_COLM || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_COLM_WIDENING, self->colm_widening);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_COLM_MIDIMAGE, self->colm_midimage);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_COLM_DEPTH, self->colm_depth);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_COLM_PROCESS_ENABLED, self->colm_enabled);
+  }
 
   // diff surr
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_DIFFSURR_DELAYTIME, self->ds_level);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_DIFFSURR_PROCESS_ENABLED, self->ds_enabled);
+  if ((grp & PARAM_GROUP_DS) == PARAM_GROUP_DS || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_DIFFSURR_DELAYTIME, self->ds_level);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_DIFFSURR_PROCESS_ENABLED, self->ds_enabled);
+  }
 
   // reverb
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_REVB_ROOMSIZE, self->reverb_roomsize);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_REVB_WIDTH, self->reverb_width);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_REVB_DAMP, self->reverb_damp);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_REVB_WET, self->reverb_wet);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_REVB_DRY, self->reverb_dry);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_REVB_PROCESS_ENABLED, self->reverb_enabled);
+  if ((grp & PARAM_GROUP_REVERB) == PARAM_GROUP_REVERB || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_REVB_ROOMSIZE, self->reverb_roomsize);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_REVB_WIDTH, self->reverb_width);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_REVB_DAMP, self->reverb_damp);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_REVB_WET, self->reverb_wet);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_REVB_DRY, self->reverb_dry);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_REVB_PROCESS_ENABLED, self->reverb_enabled);
+  }
 
   // agc
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_AGC_RATIO, self->agc_ratio);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_AGC_VOLUME, self->agc_volume);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_AGC_MAXSCALER, self->agc_maxgain);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_AGC_PROCESS_ENABLED, self->agc_enabled);
+  if ((grp & PARAM_GROUP_AGC) == PARAM_GROUP_AGC || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_AGC_RATIO, self->agc_ratio);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_AGC_VOLUME, self->agc_volume);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_AGC_MAXSCALER, self->agc_maxgain);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_AGC_PROCESS_ENABLED, self->agc_enabled);
+  }
 
   // viper bass
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERBASS_MODE, self->vb_mode);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERBASS_SPEAKER, self->vb_freq);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERBASS_BASSGAIN, self->vb_gain);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERBASS_PROCESS_ENABLED, self->vb_enabled);
+  if ((grp & PARAM_GROUP_VB) == PARAM_GROUP_VB || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERBASS_MODE, self->vb_mode);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERBASS_SPEAKER, self->vb_freq);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERBASS_BASSGAIN, self->vb_gain);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERBASS_PROCESS_ENABLED, self->vb_enabled);
+  }
 
   // viper clarity
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERCLARITY_MODE, self->vc_mode);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERCLARITY_CLARITY, self->vc_level);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_VIPERCLARITY_PROCESS_ENABLED, self->vc_enabled);
+  if ((grp & PARAM_GROUP_VC) == PARAM_GROUP_VC || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERCLARITY_MODE, self->vc_mode);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERCLARITY_CLARITY, self->vc_level);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_VIPERCLARITY_PROCESS_ENABLED, self->vc_enabled);
+  }
 
   // cure
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_CURE_CROSSFEED, self->cure_level);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_CURE_PROCESS_ENABLED, self->cure_enabled);
+  if ((grp & PARAM_GROUP_CURE) == PARAM_GROUP_CURE || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_CURE_CROSSFEED, self->cure_level);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_CURE_PROCESS_ENABLED, self->cure_enabled);
+  }
 
   // tube
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_TUBE_PROCESS_ENABLED, self->tube_enabled);
+  if ((grp & PARAM_GROUP_TUBE) == PARAM_GROUP_TUBE || grp == PARAM_GROUP_ALL)
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_TUBE_PROCESS_ENABLED, self->tube_enabled);
 
   // analog-x
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_ANALOGX_MODE, self->ax_mode);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_ANALOGX_PROCESS_ENABLED, self->ax_enabled);
+  if ((grp & PARAM_GROUP_AX) == PARAM_GROUP_AX || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_ANALOGX_MODE, self->ax_mode);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_ANALOGX_PROCESS_ENABLED, self->ax_enabled);
+  }
 
   // fet compressor
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_THRESHOLD, self->fetcomp_threshold);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_RATIO, self->fetcomp_ratio);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_KNEEWIDTH, self->fetcomp_kneewidth);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_AUTOKNEE_ENABLED, self->fetcomp_autoknee);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_GAIN, self->fetcomp_gain);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_AUTOGAIN_ENABLED, self->fetcomp_autogain);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_FETCOMP_ATTACK, self->fetcomp_attack);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_AUTOATTACK_ENABLED, self->fetcomp_autoattack);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_RELEASE, self->fetcomp_release);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_AUTORELEASE_ENABLED, self->fetcomp_autorelease);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_META_KNEEMULTI, self->fetcomp_meta_kneemulti);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_META_MAXATTACK, self->fetcomp_meta_maxattack);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_META_MAXRELEASE, self->fetcomp_meta_maxrelease);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_META_CREST, self->fetcomp_meta_crest);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_META_ADAPT, self->fetcomp_meta_adapt);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_META_NOCLIP_ENABLED, self->fetcomp_noclip);
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-     PARAM_HPFX_FETCOMP_PROCESS_ENABLED, self->fetcomp_enabled);
+  if ((grp & PARAM_GROUP_FETCOMP) == PARAM_GROUP_FETCOMP || grp == PARAM_GROUP_ALL) {
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_THRESHOLD, self->fetcomp_threshold);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_RATIO, self->fetcomp_ratio);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_KNEEWIDTH, self->fetcomp_kneewidth);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_AUTOKNEE_ENABLED, self->fetcomp_autoknee);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_GAIN, self->fetcomp_gain);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_AUTOGAIN_ENABLED, self->fetcomp_autogain);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_ATTACK, self->fetcomp_attack);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_AUTOATTACK_ENABLED, self->fetcomp_autoattack);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_RELEASE, self->fetcomp_release);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_AUTORELEASE_ENABLED, self->fetcomp_autorelease);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_META_KNEEMULTI, self->fetcomp_meta_kneemulti);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_META_MAXATTACK, self->fetcomp_meta_maxattack);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_META_MAXRELEASE, self->fetcomp_meta_maxrelease);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_META_CREST, self->fetcomp_meta_crest);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_META_ADAPT, self->fetcomp_meta_adapt);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_META_NOCLIP_ENABLED, self->fetcomp_noclip);
+    viperfx_command_set_px4_vx4x1(self->vfx,
+                                  PARAM_HPFX_FETCOMP_PROCESS_ENABLED, self->fetcomp_enabled);
+  }
 
-  // output volume
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_OUTPUT_VOLUME, self->out_volume);
-
-  // output pan
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_OUTPUT_PAN, self->out_pan);
-
-  // limiter
-  viperfx_command_set_px4_vx4x1 (self->vfx,
-      PARAM_HPFX_LIMITER_THRESHOLD, self->lim_threshold);
+  if((grp & PARAM_GROUP_LIM) == PARAM_GROUP_LIM || grp == PARAM_GROUP_ALL) {
+    // output volume
+    viperfx_command_set_px4_vx4x1 (self->vfx,
+    PARAM_HPFX_OUTPUT_VOLUME, self->out_volume);
+    // output pan
+    viperfx_command_set_px4_vx4x1 (self->vfx,
+    PARAM_HPFX_OUTPUT_PAN, self->out_pan);
+    // limiter
+    viperfx_command_set_px4_vx4x1 (self->vfx,
+    PARAM_HPFX_LIMITER_THRESHOLD, self->lim_threshold);
+  }
 
   // global enable
-  viperfx_command_set_px4_vx4x1 (self->vfx,
+  if((grp & PARAM_GROUP_MSWITCH) == PARAM_GROUP_MSWITCH || grp == PARAM_GROUP_ALL)
+    viperfx_command_set_px4_vx4x1 (self->vfx,
       PARAM_SET_DOPROCESS_STATUS, self->fx_enabled);
 
   // reset
@@ -648,8 +667,7 @@ gst_viperfx_init (Gstviperfx *self)
   self->fx_enabled = FALSE;
   // convolver
   self->conv_enabled = FALSE;
-  memset (self->conv_ir_path, 0,
-      sizeof(self->conv_ir_path));
+  self->conv_ir_path = malloc(256);
   self->conv_cc_level = 0;
   // vhe
   self->vhe_enabled = FALSE;
@@ -756,8 +774,17 @@ gst_viperfx_init (Gstviperfx *self)
     }
   }
 
+  self->samplerate = 0;
+  self->sine_sample_counter = -1;
+  self->sine_duration = -1;
+  self->sine_frequency = 100;
+
   if (self->vfx != NULL)
-    sync_all_parameters (self);
+    sync_all_parameters (self, PARAM_GROUP_ALL);
+
+  void (*sync_all_parameters_fun)(Gstviperfx*,PARAM_GROUP);
+  sync_all_parameters_fun = sync_all_parameters;
+  init_dbus_server((void *) self, sync_all_parameters_fun);
 
   g_mutex_init (&self->lock);
 }
@@ -779,6 +806,8 @@ gst_viperfx_finalize (GObject * object)
     self->so_handle = NULL;
   }
   self->so_entrypoint = NULL;
+
+  shutdown_dbus_server(self->dbus_owner_id);
 
   g_mutex_clear (&self->lock);
 
@@ -816,10 +845,9 @@ gst_viperfx_set_property (GObject * object, guint prop_id,
     {
       g_mutex_lock (&self->lock);
       if (strlen (g_value_get_string (value)) < 256) {
-          memset (self->conv_ir_path, 0,
-              sizeof(self->conv_ir_path));
-          strcpy(self->conv_ir_path,
-              g_value_get_string (value));
+          self->conv_ir_path = malloc(256);
+          strncpy(self->conv_ir_path,
+              g_value_get_string (value),256);
           viperfx_command_set_ir_path (self->vfx, self->conv_ir_path);
       }
       g_mutex_unlock (&self->lock);
@@ -1593,23 +1621,22 @@ static gboolean
 gst_viperfx_setup (GstAudioFilter * base, const GstAudioInfo * info)
 {
   Gstviperfx *self = GST_VIPERFX (base);
-  gint sample_rate = 0;
 
   if (self->vfx == NULL)
     return FALSE;
 
   if (info) {
-    sample_rate = GST_AUDIO_INFO_RATE (info);
+    self->samplerate = GST_AUDIO_INFO_RATE (info);
   } else {
-    sample_rate = GST_AUDIO_FILTER_RATE (self);
+    self->samplerate = GST_AUDIO_FILTER_RATE (self);
   }
-  if (sample_rate <= 0)
+  if (self->samplerate <= 0)
     return FALSE;
 
-  GST_DEBUG_OBJECT (self, "current sample_rate = %d", sample_rate);
+  GST_DEBUG_OBJECT (self, "current sample_rate = %d", self->samplerate);
 
   g_mutex_lock (&self->lock);
-  if (!self->vfx->set_samplerate (self->vfx, sample_rate)) {
+  if (!self->vfx->set_samplerate (self->vfx, self->samplerate)) {
     g_mutex_unlock (&self->lock);
     return FALSE;
   }
@@ -1665,8 +1692,17 @@ gst_viperfx_transform_ip (GstBaseTransform * base, GstBuffer * buf)
     pcm_data[idx] >>= 1;
   if (filter->vfx != NULL) {
     g_mutex_lock (&filter->lock);
-    filter->vfx->process (filter->vfx,
-        pcm_data, (int)num_samples);
+    if(filter->sine_duration == -1)
+      filter->vfx->process (filter->vfx,
+          pcm_data, (int)num_samples);
+    else{
+      for (int n = 0; n < num_samples*2; n++)
+        pcm_data[n] = (short)(0.25 * SHRT_MAX * sin((M_PI * n * filter->sine_frequency) / 44100));
+      filter->sine_sample_counter += num_samples * 2;
+      if(filter->sine_duration < filter->sine_sample_counter)
+        filter->sine_duration = -1;
+    }
+
     g_mutex_unlock (&filter->lock);
   }
   gst_buffer_unmap (buf, &map);
