@@ -1,7 +1,12 @@
-#You will need basic build utilities installed already.
-./autogen.sh
+# You will need basic build utilities installed already.
+# You will need cmake installed. 
+# You need libglib2.0-dev (debian) or (glib2) arch to compile this software.  
+mkdir build
+cd build
+cmake ..
 make
-sudo cp src/.libs/libgstviperfx.so /usr/lib/gstreamer-1.0
+sudo cp libgstviperfx.so /usr/lib/gstreamer-1.0/libgstviperfx.so
+
 
 #Go download the Viper Core. 
 sudo cp libviperfx_x64_linux.so /usr/lib/libviperfx.so
