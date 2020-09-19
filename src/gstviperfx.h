@@ -20,7 +20,7 @@ G_BEGIN_DECLS
 #define GST_IS_VIPERFX_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass) ,GST_TYPE_VIPERFX))
 
 #define PACKAGE "viperfx-plugin"
-#define VERSION "2.0.0"
+#define VERSION "2.1.0"
 
 #define ALLOWED_CAPS \
   "audio/x-raw,"                            \
