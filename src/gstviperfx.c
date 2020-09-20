@@ -685,6 +685,7 @@ gst_viperfx_init (Gstviperfx *self) {
     // convolver
     self->conv_enabled = FALSE;
     self->conv_ir_path = malloc(256);
+    memset(self->conv_ir_path, 0, 256);
     self->conv_cc_level = 0;
     // vhe
     self->vhe_enabled = FALSE;
